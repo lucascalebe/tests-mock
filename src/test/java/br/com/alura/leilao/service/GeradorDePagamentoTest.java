@@ -11,7 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 public class GeradorDePagamentoTest {
 
@@ -24,20 +27,29 @@ public class GeradorDePagamentoTest {
     @Captor
     private ArgumentCaptor<Pagamento> captor;
 
+    @Mock
+    private Clock clock;
+
     @BeforeEach
     public void beforeEach() {
         MockitoAnnotations.initMocks(this);
-        this.geradorDePagamento = new GeradorDePagamento(pagamentoDao);
+        this.geradorDePagamento = new GeradorDePagamento(pagamentoDao, clock);
     }
 
     @Test
     void deveriaCriarPagamentoParaVencedorDoLeilao() {
         Leilao leilao = leilao();
         Lance vencedor = leilao.getLanceVencedor();
+
+        LocalDate data = LocalDate.of(2022,2,10);
+
+        Instant instant = data.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+        Mockito.when(clock.instant()).thenReturn(instant);
+        Mockito.when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+
         geradorDePagamento.gerarPagamento(vencedor);
 
-        //captura objeto que esta sendo passado como parametro
-        //se usa o captor quando o objeto é instanciado dentro do proprio metodo
         Mockito.verify(pagamentoDao).salvar(captor.capture());
 
         Pagamento pagamento = captor.getValue();
